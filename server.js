@@ -20,7 +20,7 @@ app.post('/api/openai', async (req, res) => {
       temperature: 0.8,
     }, {
       headers: {
-        Authorization: `Bearer ${process.env.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}`,
+       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       }
     });
