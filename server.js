@@ -28,6 +28,33 @@ app.get('/api/lastfm', async (req, res) => {
   }
 });
 
+
+// 🔒 ROTA SEGURA PARA OBTER TOKEN DO SPOTIFY
+app.get('/api/spotify-token', async (req, res) => {
+  try {
+    const credentials = Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64');
+
+    const response = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      'grant_type=client_credentials',
+      {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+
+    res.json({ access_token: response.data.access_token });
+  } catch (error) {
+    console.error('Erro ao obter token do Spotify:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Erro ao obter token do Spotify' });
+  }
+});
+
+
 // 🔁 OBRIGATÓRIO para funcionar no Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+
+
