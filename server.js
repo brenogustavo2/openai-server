@@ -8,31 +8,38 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/openai', async (req, res) => {
-  const { album, artist, score } = req.body;
-  const prompt = `Escreva uma review curta, criativa e pessoal para o álbum '${album}' do artista '${artist}', considerando uma nota de ${score}/100. Fale sobre pontos positivos, negativos e sensações gerais, como um fã de música faria.`;
-
+// 🎧 Obter token do Spotify
+app.get('/api/spotify-token', async (req, res) => {
   try {
-    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 180,
-      temperature: 0.8,
-    }, {
-      headers: {
-       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+    const credentials = Buffer.from(`${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`).toString('base64');
+    const response = await axios.post('https://accounts.spotify.com/api/token',
+      'grant_type=client_credentials',
+      {
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       }
-    });
-
-    res.json({ suggestion: response.data.choices[0].message.content.trim() });
+    );
+    res.json({ access_token: response.data.access_token });
   } catch (error) {
     console.error(error.response?.data || error.message);
-    res.status(500).json({ error: 'Erro ao acessar OpenAI' });
+    res.status(500).json({ error: 'Erro ao obter token do Spotify' });
   }
 });
 
-// Outras rotas (Spotify, Firebase, Last.fm) serão adicionadas depois
+// 🎵 Usar API da Last.fm sem expor chave
+app.get('/api/lastfm', async (req, res) => {
+  try {
+    const { method, artist, album, track } = req.query;
+    const url = `https://ws.audioscrobbler.com/2.0/?method=${method}&artist=${encodeURIComponent(artist || '')}&album=${encodeURIComponent(album || '')}&track=${encodeURIComponent(track || '')}&api_key=${process.env.LASTFM_API_KEY}&format=json`;
+    const response = await axios.get(url);
+    res.json(response.data);
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: 'Erro ao acessar a Last.fm' });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
