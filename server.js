@@ -31,8 +31,14 @@ app.get('/api/spotify-token', async (req, res) => {
 // 🎵 Usar API da Last.fm sem expor chave
 app.get('/api/lastfm', async (req, res) => {
   try {
-    const { method, artist, album, track } = req.query;
-    const url = `https://ws.audioscrobbler.com/2.0/?method=${method}&artist=${encodeURIComponent(artist || '')}&album=${encodeURIComponent(album || '')}&track=${encodeURIComponent(track || '')}&api_key=${process.env.LASTFM_API_KEY}&format=json`;
+    const base = 'https://ws.audioscrobbler.com/2.0/';
+    const queryParams = new URLSearchParams({
+      ...req.query,
+      api_key: process.env.LASTFM_API_KEY,
+      format: 'json'
+    });
+
+    const url = `${base}?${queryParams.toString()}`;
     const response = await axios.get(url);
     res.json(response.data);
   } catch (error) {
@@ -40,6 +46,3 @@ app.get('/api/lastfm', async (req, res) => {
     res.status(500).json({ error: 'Erro ao acessar a Last.fm' });
   }
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
